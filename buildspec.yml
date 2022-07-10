@@ -1,0 +1,29 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: latest
+    commands:
+      - npm install
+  pre_build:
+    commands:
+      - npm run test
+      - echo Logging in to Amazon ECR...
+      - docker login --username $DOCKER_USER --password $DOCKER_PASSWORD
+      - rm -rf node_modules
+      - docker build -t immersiveuk/immersive-interactive-api --build-arg CODEBUILD_BUILD_ID --build-arg CODEBUILD_RESOLVED_SOURCE_VERSION .
+  post_build:
+    commands:
+      - export IMAGE_ID=$(docker images immersiveuk/immersive-interactive-api --format {{.ID}})
+      - docker tag $IMAGE_ID $ECR_URL
+      - aws ecr get-login --no-include-email | bash
+      - docker push $ECR_URL
+      - aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment
+artifacts:
+  files:
+    - "**/*"
+  name: $(AWS_REGION)-$(date +%Y-%m-%d)
+cache:
+  paths:
+    - node_modules
