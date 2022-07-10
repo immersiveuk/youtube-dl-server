@@ -8,7 +8,6 @@ phases:
       - npm install
   pre_build:
     commands:
-      - npm run test
       - echo Logging in to Amazon ECR...
       - docker login --username $DOCKER_USER --password $DOCKER_PASSWORD
       - rm -rf node_modules
